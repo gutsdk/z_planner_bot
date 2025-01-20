@@ -24,7 +24,7 @@ class Program
         Console.WriteLine($"Bot {me.FirstName} is running...");
 
         botClient.StartReceiving(HandleUpdateAsync, HandleErrorAsync, receiverOptions, CancellationToken.None);
-        Console.ReadLine();
+        await Task.Delay(Timeout.Infinite);
     }
 
     private static async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
