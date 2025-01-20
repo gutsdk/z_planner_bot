@@ -27,4 +27,4 @@ jobs:
     - name: Run bot
       env:
         TG_TOKEN: ${{ secrets.TG_TOKEN }}
-      run: dotnet run
+      run: dotnet run --project Solution/z_planner_bot/z_planner_bot.csproj
