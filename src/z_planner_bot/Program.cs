@@ -29,12 +29,15 @@ class Program
 
     private static async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
+        Console.WriteLine($"Update type: {update.Type}");
+
         if (update.Type == Telegram.Bot.Types.Enums.UpdateType.Message && update.Message?.Text != null)
         {
             var message = update.Message;
             Console.WriteLine($"Received a message from {message.Chat.Username}: {message.Text}");
 
-            await botClient.SendMessage(message.Chat.Id, $"Ты написал: {message.Text}");
+            // Новый метод SendMessage вместо устаревшего SendTextMessageAsync
+            await botClient.SendMessage(message.Chat.Id, $"Ты написал: {message.Text}", cancellationToken: cancellationToken);
         }
     }
 
