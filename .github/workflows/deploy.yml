@@ -19,12 +19,12 @@ jobs:
         dotnet-version: '8.0'
 
     - name: Restore dependencies
-      run: dotnet restore src/z_planner_bot/z_planner_bot.sln
+      run: dotnet restore src/z_planner_bot/z_planner_bot.csproj
 
     - name: Build
-      run: dotnet build src/z_planner_bot/z_planner_bot.sln --configuration Release
+      run: dotnet build src/z_planner_bot/z_planner_bot.csproj --configuration Release
 
     - name: Run bot
       env:
         TG_TOKEN: ${{ secrets.TG_TOKEN }}
-      run: dotnet run --project src/z_planner_bot/z_planner_bot.sln
+      run: dotnet run --project src/z_planner_bot/z_planner_bot.csproj
