@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "z_planner_bot": {
+      "commandName": "Project"
+    },
+    "Container (Dockerfile)": {
+      "commandName": "Docker"
+    }
+  }
+}
