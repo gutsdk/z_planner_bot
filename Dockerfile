@@ -1,14 +1,15 @@
 # Этап сборки
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 
-# Устанавливаем рабочую директорию
-WORKDIR /src
+# Устанавливаем рабочую директорию для сборки
+WORKDIR /src/z_planner_bot
 
 # Копируем проект и восстанавливаем зависимости
-COPY . ./
+COPY src/z_planner_bot/z_planner_bot.csproj ./
 RUN dotnet restore
 
 # Собираем проект
+COPY src/z_planner_bot/. ./
 RUN dotnet publish -c Release -o /out
 
 # Этап выполнения
@@ -24,4 +25,4 @@ COPY --from=build /out .
 EXPOSE 80
 
 # Запуск приложения
-ENTRYPOINT ["dotnet", "z_planner_bot.dll"]  
+ENTRYPOINT ["dotnet", "z_planner_bot.dll"]
