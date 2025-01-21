@@ -9,7 +9,6 @@ COPY src/z_planner_bot/z_planner_bot.csproj ./
 RUN dotnet restore
 
 # Собираем проект
-COPY src/z_planner_bot/. ./
 RUN dotnet publish -c Release -o /out
 
 # Этап выполнения
