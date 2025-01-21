@@ -2,15 +2,15 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 
 # Устанавливаем рабочую директорию для сборки
-WORKDIR /src
+WORKDIR /src/z_planner_bot
 
 # Копируем решение и восстанавливаем зависимости
 COPY src/z_planner_bot/z_planner_bot.sln ./
-COPY src/z_planner_bot/z_planner_bot.csproj ./src/z_planner_bot/
+COPY src/z_planner_bot/z_planner_bot.csproj 
 RUN dotnet restore
 
 # Собираем и публикуем решение
-RUN dotnet publish src/z_planner_bot/z_planner_bot.csproj -c Release -o /out
+RUN dotnet publish -c Release -o /out
 
 # Этап выполнения
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
