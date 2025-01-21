@@ -36,7 +36,6 @@ class Program
             var message = update.Message;
             Console.WriteLine($"Received a message from {message.Chat.Username}: {message.Text}");
 
-            // Новый метод SendMessage вместо устаревшего SendTextMessageAsync
             await botClient.SendMessage(message.Chat.Id, $"Ты написал: {message.Text}", cancellationToken: cancellationToken);
         }
     }

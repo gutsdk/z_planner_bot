@@ -1,5 +1,3 @@
 ﻿src/z_planner_bot/bin
 src/z_planner_bot/obj
-src/z_planner_bot/.dockerignore
-src/z_planner_bot/Dockerfile
 .vs/
