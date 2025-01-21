@@ -2,7 +2,7 @@
 using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
 
-class Program
+public class Program
 {
     private static readonly ReceiverOptions receiverOptions = new ReceiverOptions
     {
