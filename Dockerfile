@@ -6,10 +6,10 @@ WORKDIR /src/z_planner_bot
 
 # Копируем решение и восстанавливаем зависимости
 COPY src/z_planner_bot/z_planner_bot.sln ./
-COPY src/z_planner_bot/z_planner_bot.csproj 
 RUN dotnet restore
 
 # Собираем и публикуем решение
+COPY src/z_planner_bot/z_planner_bot.csproj ./
 RUN dotnet publish -c Release -o /out
 
 # Этап выполнения
