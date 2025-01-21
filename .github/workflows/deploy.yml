@@ -55,7 +55,7 @@ jobs:
         username: ${{ secrets.SERVER_USER }}
         password: ${{ secrets.SERVER_PASSWORD }}
         script: |
-          docker pull ${{ secrets.DOCKER_USERNAME }}/z_planner_bot:latest
           docker stop z_planner_bot
           docker rm z_planner_bot
+          docker pull ${{ secrets.DOCKER_USERNAME }}/z_planner_bot:latest
           docker run -d --restart unless-stopped --name z_planner_bot ${{ secrets.DOCKER_USERNAME }}/z_planner_bot:latest
