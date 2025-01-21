@@ -10,7 +10,7 @@ RUN dotnet restore
 
 # Собираем и публикуем решение
 COPY src/z_planner_bot/. ./
-RUN dotnet publish -c Release -o /out
+RUN dotnet publish -c Release --property:OutputPath=/out
 
 # Этап выполнения
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
