@@ -9,7 +9,7 @@ class Program
         AllowedUpdates = { }
     };
 
-    static async Task Main(string[] args)
+    public static async Task Main(string[] args)
     {
         string? botToken = Environment.GetEnvironmentVariable("TG_TOKEN");
 
