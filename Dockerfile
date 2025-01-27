@@ -21,8 +21,8 @@ WORKDIR /app
 # Копируем собранные файлы из этапа сборки
 COPY --from=build /out .
 
-# Открываем порт 80 для приложения
-EXPOSE 80
+# Открываем порт 443 для приложения
+EXPOSE 443
 
 # Запуск приложения
 ENTRYPOINT ["dotnet", "z_planner_bot.dll"]
