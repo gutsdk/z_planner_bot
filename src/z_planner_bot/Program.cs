@@ -1,49 +1,98 @@
-﻿using Telegram.Bot;
-using Telegram.Bot.Polling;
+﻿using Microsoft.EntityFrameworkCore;
+using Telegram.Bot;
+using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types;
+using z_planner_bot.Controllers;
+using z_planner_bot.Views;
+using Telegram.Bot.Polling;
 
-public class Program
+string? botToken = Environment.GetEnvironmentVariable("TG_TOKEN");
+if (string.IsNullOrEmpty(botToken))
 {
-    private static readonly ReceiverOptions receiverOptions = new ReceiverOptions
-    {
-        AllowedUpdates = { }
-    };
-
-    public static async Task Main(string[] args)
-    {
-        string? botToken = Environment.GetEnvironmentVariable("TG_TOKEN");
-
-        if (string.IsNullOrEmpty(botToken))
-        {
-            Console.WriteLine("Ошибка: Токен не задан");
-            return;
-        }
-
-        var botClient = new TelegramBotClient(botToken);
-        var me = await botClient.GetMe();
-        Console.WriteLine($"Bot {me.FirstName} is running...");
-
-        botClient.StartReceiving(HandleUpdateAsync, HandleErrorAsync, receiverOptions, CancellationToken.None);
-        await Task.Delay(Timeout.Infinite);
-    }
-
-    private static async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
-    {
-        Console.WriteLine($"Update type: {update.Type}");
-
-        if (update.Type == Telegram.Bot.Types.Enums.UpdateType.Message && update.Message?.Text != null)
-        {
-            var message = update.Message;
-            Console.WriteLine($"Received a message from {message.Chat.Username}: {message.Text}");
-
-            await botClient.SendMessage(message.Chat.Id, $"Ты написал: {message.Text}", cancellationToken: cancellationToken);
-        }
-    }
-
-    private static Task HandleErrorAsync(ITelegramBotClient botClient, Exception exception, HandleErrorSource source, CancellationToken cancellationToken)
-    {
-        Console.WriteLine($"Error occured: {exception.Message}");
-        return Task.CompletedTask;
-    }
-
+    Console.WriteLine("Ошибка: Токен не задан");
+    return;
 }
+
+string? dBConnectionString = Environment.GetEnvironmentVariable("DB_CONNECT");
+if (!string.IsNullOrEmpty(dBConnectionString))
+{
+    Console.WriteLine("Не получилось подключиться к БД");
+    return;
+}
+
+var botClient = new TelegramBotClient(botToken);
+
+var dbContextOptions = new DbContextOptionsBuilder<AppDbContext>()
+    .UseNpgsql(dBConnectionString)
+    .Options;
+using var dbContext = new AppDbContext(dbContextOptions);
+
+var taskView = new TaskView(botClient);
+var taskController = new TaskController(dbContext, taskView);
+
+async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
+{
+    if (update.Type == UpdateType.Message && update.Message.Type == MessageType.Text)
+    {
+        var chatId = update.Message.Chat.Id;
+        var userId = update.Message.From.Id;
+        var text = update.Message.Text;
+
+        switch (text)
+        {
+            case "Добавить задачу":
+                await taskView.SendMessageAsync(chatId, "Введите наименование задачи:");
+                break;
+            case "Мои задачи":
+                await taskController.HandleListTasksAsync(chatId, userId);
+                break;
+            case "Просроченные задачи":
+                await taskController.HandleOverdueTasksAsync(chatId, userId); // todo
+                break;
+            case "Помощь":
+                await taskView.SendHelpAsync(chatId);
+                break;
+            default:
+                // Если пользователь вводит текст после запроса на добавление задачи
+                if (text.Contains("\n"))
+                {
+                    var parts = text.Split('\n');
+                    var title = parts[0];
+                    var description = parts.Length > 1 ? parts[1] : null;
+                    await taskController.HandleAddTaskAsync(chatId, userId, title, description);
+                }
+                else
+                {
+                    await taskController.HandleAddTaskAsync(chatId, userId, text);
+                }
+                break;
+        } 
+    }
+    else if (update.Type == UpdateType.CallbackQuery)
+    {
+        await taskController.HandleCallbackQueryAsync(update.CallbackQuery);
+    }
+}
+
+Task HandleErrorAsync(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken)
+{
+    Console.WriteLine($"Ошибка: {exception.Message}");
+    return Task.CompletedTask;
+}
+
+var receiverOptions = new ReceiverOptions
+{
+    AllowedUpdates = Array.Empty<UpdateType>()  // получаем все типы обновлений
+};
+
+using var cts = new CancellationTokenSource();
+botClient.StartReceiving(
+    updateHandler: HandleUpdateAsync,
+    errorHandler: HandleErrorAsync,
+    receiverOptions: receiverOptions,
+    cancellationToken: cts.Token
+);
+
+Console.WriteLine("Бот запущен...");
+await Task.Delay(Timeout.Infinite);
+cts.Cancel();
