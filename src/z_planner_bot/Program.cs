@@ -14,7 +14,7 @@ if (string.IsNullOrEmpty(botToken))
 }
 
 string? dBConnectionString = Environment.GetEnvironmentVariable("DB_CONNECT");
-if (!string.IsNullOrEmpty(dBConnectionString))
+if (string.IsNullOrEmpty(dBConnectionString))
 {
     Console.WriteLine("Не получилось подключиться к БД");
     return;
