@@ -47,7 +47,7 @@ namespace z_planner_bot.Views
                 InlineKeyboardButton.WithCallbackData("✏️ Редактировать", $"edit_{t.Id}")
             }));
 
-            await SendMessageAsync(chatId, $"Ваши задачи:\n{sb.ToString()}", inlineKeyboard);
+            await SendMessageAsync(chatId, sb.ToString(), inlineKeyboard);
         }
 
         public async Task ShowMainMenuAsync(long chatId)

@@ -1,17 +1,26 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Telegram.Bot;
+﻿using Telegram.Bot;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types;
 using z_planner_bot.Controllers;
 using z_planner_bot.Views;
 using Telegram.Bot.Polling;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.DependencyInjection;
+
+//using IHost host = Host.CreateApplicationBuilder(args).Build();
+//IConfiguration configuration = host.Services.GetRequiredService<IConfiguration>();
+//string? botToken = configuration.GetValue<string>("TG_TOKEN:Value");
 
 string? botToken = Environment.GetEnvironmentVariable("TG_TOKEN");
+
 if (string.IsNullOrEmpty(botToken))
 {
     Console.WriteLine("Ошибка: Токен не задан");
     return;
 }
+
+//string? dBConnectionString = configuration.GetValue<string>("DB_CONNECT:Value");
 
 string? dBConnectionString = Environment.GetEnvironmentVariable("DB_CONNECT");
 if (string.IsNullOrEmpty(dBConnectionString))
@@ -21,11 +30,7 @@ if (string.IsNullOrEmpty(dBConnectionString))
 }
 
 var botClient = new TelegramBotClient(botToken);
-
-var dbContextOptions = new DbContextOptionsBuilder<AppDbContext>()
-    .UseNpgsql(dBConnectionString)
-    .Options;
-using var dbContext = new AppDbContext(dbContextOptions);
+var dbContext = new AppDbContext(dBConnectionString);
 
 var taskView = new TaskView(botClient);
 var taskController = new TaskController(dbContext, taskView);
@@ -47,10 +52,13 @@ async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, Cancel
                 await taskController.HandleListTasksAsync(chatId, userId);
                 break;
             case "Просроченные задачи":
-                await taskController.HandleOverdueTasksAsync(chatId, userId); // todo
+                await taskController.HandleOverdueTasksAsync(chatId, userId); 
                 break;
             case "Помощь":
                 await taskView.SendHelpAsync(chatId);
+                break;
+            case "/start":
+                await taskView.ShowMainMenuAsync(chatId);
                 break;
             default:
                 // Если пользователь вводит текст после запроса на добавление задачи

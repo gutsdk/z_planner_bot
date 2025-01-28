@@ -4,9 +4,19 @@ namespace z_planner_bot.Controllers
 {
     internal class AppDbContext : DbContext
     {
-        public DbSet<Models.Task> Tasks { get; set; }
+        private readonly string connectionString;
+        public DbSet<Models.Task> Tasks { get; set; } = null!;
 
-        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
+        public AppDbContext(string connection)
+        {
+            connectionString = connection;
+            Database.EnsureCreated();
+        }
+
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            optionsBuilder.UseNpgsql(connectionString);
+        }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

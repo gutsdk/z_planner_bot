@@ -1,3 +1,4 @@
 ﻿src/z_planner_bot/bin
 src/z_planner_bot/obj
 .vs/
+src/z_planner_bot/appsettings.json
