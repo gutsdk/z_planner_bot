@@ -58,4 +58,7 @@ jobs:
           docker stop z_planner_bot
           docker rm z_planner_bot
           docker pull ${{ secrets.DOCKER_USERNAME }}/z_planner_bot:latest
-          docker run -d --restart unless-stopped --name z_planner_bot -e TG_TOKEN=${{ secrets.TG_TOKEN }} -e DB_CONNECT=${{ secrets.DB_CONNECT }} ${{ secrets.DOCKER_USERNAME }}/z_planner_bot:latest
+          docker run -d --restart unless-stopped --name z_planner_bot \
+            -e TG_TOKEN=${{ secrets.TG_TOKEN }} \
+            -e DB_CONNECT=${{ secrets.DB_CONNECT }} \
+            ${{ secrets.DOCKER_USERNAME }}/z_planner_bot:latest
