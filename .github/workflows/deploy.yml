@@ -44,6 +44,16 @@ jobs:
         docker build -t ${{ secrets.DOCKER_USERNAME }}/z_planner_bot:latest -f Dockerfile .
         docker push ${{ secrets.DOCKER_USERNAME }}/z_planner_bot:latest
 
+    - name: Create .env file on server
+      uses: appleboy/ssh-action@v0.1.4
+      with:
+        host: ${{ secrets.SERVER_IP }}
+        username: ${{ secrets.SERVER_USER }}
+        password: ${{ secrets.SERVER_PASSWORD }}
+        script: |
+          echo "TG_TOKEN=${{ secrets.TG_TOKEN }}" > .env
+          echo "DB_CONNECT=${{ secrets.DB_CONNECT }}" >> .env
+
     - name: SSH to server and restart Docker container
       uses: appleboy/ssh-action@v0.1.4
       with:
@@ -55,6 +65,5 @@ jobs:
           docker rm z_planner_bot || true
           docker pull ${{ secrets.DOCKER_USERNAME }}/z_planner_bot:latest
           docker run -d --network host --restart unless-stopped --name z_planner_bot \
-            -e TG_TOKEN=${{ secrets.TG_TOKEN }} \
-            -e DB_CONNECT=${{ secrets.DB_CONNECT }} \
+            --env-file .env \
             ${{ secrets.DOCKER_USERNAME }}/z_planner_bot:latest
