@@ -8,6 +8,7 @@ namespace z_planner_bot.Controllers
     {
         private readonly AppDbContext _dbContext;
         private readonly TaskView _taskView;
+        private readonly Dictionary<long, int> _pendingEdits = new();
 
         public TaskController(AppDbContext dbContext, TaskView taskView)
         {
@@ -88,6 +89,26 @@ namespace z_planner_bot.Controllers
             await _taskView.SendMessageAsync(chatId, $"Задача отмечена как {(task.IsCompleted ? "выполненная" : "не выполненная")}. 😎");
         }
 
+        public async Task HandleEditTaskAsync(long chatId, long userId, int taskId, string title, string? description = null)
+        {
+            var task = await _dbContext.Tasks
+                .FirstOrDefaultAsync(task => task.UserId == userId && task.Id == taskId);
+
+            if (task == null)
+            {
+                await _taskView.SendMessageAsync(chatId, "Задача не найдена. 😕");
+                return;
+            }
+
+            task.Title = title;
+            if (description != null)
+                task.Description = description;
+
+            await _dbContext.SaveChangesAsync();
+
+            await _taskView.SendMessageAsync(chatId, "Задача обновлена ✅");
+        }
+
         // Обработка callback-запросов (нажатия на кнопки)
         public async Task HandleCallbackQueryAsync(CallbackQuery callbackQuery)
         {
@@ -107,6 +128,7 @@ namespace z_planner_bot.Controllers
                     await HandleToggleTaskAsync(chatId, userId, taskId);
                     break;
                 case "edit":
+                    _pendingEdits[chatId] = taskId;
                     await _taskView.SendMessageAsync(chatId, "Введите новое название и описание (опционально):");
                     break;
                 default:
@@ -116,6 +138,20 @@ namespace z_planner_bot.Controllers
 
             // Обновляем список задач после выполнения действия
             await HandleListTasksAsync(chatId, userId);
+        }
+
+        // Проверка ожидания редактирования
+        public bool IsWaitingForEdit(long chatId) => _pendingEdits.ContainsKey(chatId);
+
+        // Получение ID задачи, которую требуется отредактировать
+        public int GetPendingEditTaskId(long chatId)
+        {
+            if (_pendingEdits.TryGetValue(chatId, out var taskId))
+            {
+                _pendingEdits.Remove(chatId);
+                return taskId;
+            }
+            return -1;
         }
     }
 }

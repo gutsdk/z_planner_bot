@@ -43,6 +43,19 @@ async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, Cancel
         var userId = update.Message.From.Id;
         var text = update.Message.Text;
 
+        if (taskController.IsWaitingForEdit(chatId))
+        {
+            int taskId = taskController.GetPendingEditTaskId(chatId);
+
+            var parts = text.Split('|', 2);
+            var newTitle = parts[0].Trim();
+            var newDescription = parts.Length > 1 ? parts[1].Trim() : null;
+
+            await taskController.HandleEditTaskAsync(chatId, userId, taskId, newTitle, newDescription);
+            await taskController.HandleListTasksAsync(chatId, userId);
+            return;
+        }
+
         switch (text)
         {
             case "Добавить задачу":
