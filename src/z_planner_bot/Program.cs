@@ -3,10 +3,12 @@ using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types;
 using z_planner_bot.Controllers;
 using z_planner_bot.Views;
+using z_planner_bot.Models;
 using Telegram.Bot.Polling;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.EntityFrameworkCore;
+using z_planner_bot.Services;
 
 //using IHost host = Host.CreateApplicationBuilder(args).Build();
 //IConfiguration configuration = host.Services.GetRequiredService<IConfiguration>();
@@ -16,7 +18,7 @@ string? botToken = Environment.GetEnvironmentVariable("TG_TOKEN");
 
 if (string.IsNullOrEmpty(botToken))
 {
-    Console.WriteLine("Ошибка: Токен не задан");
+    Console.WriteLine("Ошибка: Токен не указан");
     return;
 }
 
@@ -25,18 +27,40 @@ if (string.IsNullOrEmpty(botToken))
 string? dBConnectionString = Environment.GetEnvironmentVariable("DB_CONNECT");
 if (string.IsNullOrEmpty(dBConnectionString))
 {
-    Console.WriteLine("Не получилось подключиться к БД");
+    Console.WriteLine("Ошибка: Строка подключения не указана");
     return;
 }
 
 var botClient = new TelegramBotClient(botToken);
-var dbContext = new AppDbContext(dBConnectionString);
 
-var taskView = new TaskView(botClient);
-var taskController = new TaskController(dbContext, taskView);
+var builder = Host.CreateDefaultBuilder(args)
+    .ConfigureServices((context, services) =>
+    {
+        // Регистрируем AppDbContext
+        services.AddDbContextFactory<AppDbContext>(options =>
+        {
+            options.UseNpgsql(dBConnectionString);
+        });
+        // Регистрируем бота
+        services.AddSingleton(botClient);
+        // Регистрируем TaskView
+        services.AddSingleton<TaskView>();
+        // Регистрируем TaskController
+        services.AddTransient<TaskController>();
 
-async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
+        // Регистрируем фоновый сервис
+        services.AddHostedService<DatabaseHealthCheckService>();
+    });
+
+using var host = builder.Build();
+var serviceProvider = host.Services;
+
+async System.Threading.Tasks.Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
 {
+    using var scope = serviceProvider.CreateScope();
+    var taskController = scope.ServiceProvider.GetRequiredService<TaskController>();
+    var taskView = scope.ServiceProvider.GetRequiredService<TaskView>();
+
     if (update.Type == UpdateType.Message && update.Message.Type == MessageType.Text)
     {
         var chatId = update.Message.Chat.Id;
@@ -65,7 +89,7 @@ async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, Cancel
                 await taskController.HandleListTasksAsync(chatId, userId);
                 break;
             case "Просроченные задачи":
-                await taskController.HandleOverdueTasksAsync(chatId, userId); 
+                await taskController.HandleOverdueTasksAsync(chatId, userId);
                 break;
             case "Помощь":
                 await taskView.SendHelpAsync(chatId);
@@ -87,7 +111,7 @@ async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, Cancel
                     await taskController.HandleAddTaskAsync(chatId, userId, text);
                 }
                 break;
-        } 
+        }
     }
     else if (update.Type == UpdateType.CallbackQuery)
     {
@@ -95,10 +119,10 @@ async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, Cancel
     }
 }
 
-Task HandleErrorAsync(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken)
+System.Threading.Tasks.Task HandleErrorAsync(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken)
 {
     Console.WriteLine($"Ошибка: {exception.Message}");
-    return Task.CompletedTask;
+    return System.Threading.Tasks.Task.CompletedTask;
 }
 
 var receiverOptions = new ReceiverOptions
@@ -115,5 +139,5 @@ botClient.StartReceiving(
 );
 
 Console.WriteLine("Бот запущен...");
-await Task.Delay(Timeout.Infinite);
+await host.RunAsync();
 cts.Cancel();
