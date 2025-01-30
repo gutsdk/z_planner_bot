@@ -11,19 +11,6 @@ namespace z_planner_bot.Models
             Database.EnsureCreated();
         }
 
-        public async Task<bool> CheckConnectionAsync()
-        {
-            try
-            {
-                return await Database.CanConnectAsync();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Ошибка подключения к базе данных: {ex.Message}");
-                return false;
-            }
-        }
-
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<Task>(entity =>

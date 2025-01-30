@@ -16,32 +16,32 @@ namespace z_planner_bot.Services
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            using var dbContext = await _dbContextFactory.CreateDbContextAsync();
             _logger.LogInformation("Сервис проверки состояния базы запущен...");
 
             while (!stoppingToken.IsCancellationRequested)
             {
                 try
                 {
+                    using var dbContext = await _dbContextFactory.CreateDbContextAsync();
                     //  Проверяем подключение к базе данных
-                    bool isConnected = await dbContext.CheckConnectionAsync();
+                    bool isConnected = await dbContext.Database.CanConnectAsync();
 
                     if (isConnected)
                     {
-                        _logger.LogInformation("Подключение активно");
+                        _logger.LogInformation("✅ Подключение к базе активно");
                     }
                     else
                     {
-                        _logger.LogWarning("Подключение к базе потеряно. Попытка подключиться заново...");
-                        // возможно надо будет добавить сюда дополнительные действия, todo
+                        _logger.LogWarning("⚠️ Потеряно подключение к базе");
+                        // возможно надо будет добавить сюда дополнительные действия
                     }
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Произошла ошибка во время проверки подключения к базе");
+                    _logger.LogError(ex, "❌ Ошибка подключения к базе");
                 }
 
-                await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
+                await Task.Delay(TimeSpan.FromMinutes(10), stoppingToken);
             }
 
             _logger.LogInformation("Сервис проверки состояния базы остановлен...");
