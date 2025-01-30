@@ -6,7 +6,7 @@ namespace z_planner_bot.Models
     {
         public DbSet<Task> Tasks { get; set; } = null!;
 
-        public AppDbContext()
+        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {
             Database.EnsureCreated();
         }

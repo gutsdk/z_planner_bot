@@ -9,29 +9,10 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using z_planner_bot.Services;
+using Microsoft.Extensions.Configuration;
 
-//using IHost host = Host.CreateApplicationBuilder(args).Build();
-//IConfiguration configuration = host.Services.GetRequiredService<IConfiguration>();
-//string? botToken = configuration.GetValue<string>("TG_TOKEN:Value");
-
-string? botToken = Environment.GetEnvironmentVariable("TG_TOKEN");
-
-if (string.IsNullOrEmpty(botToken))
-{
-    Console.WriteLine("Ошибка: Токен не указан");
-    return;
-}
-
-//string? dBConnectionString = configuration.GetValue<string>("DB_CONNECT:Value");
-
-string? dBConnectionString = Environment.GetEnvironmentVariable("DB_CONNECT");
-if (string.IsNullOrEmpty(dBConnectionString))
-{
-    Console.WriteLine("Ошибка: Строка подключения не указана");
-    return;
-}
-
-var botClient = new TelegramBotClient(botToken);
+using IHost hostConfig = Host.CreateApplicationBuilder(args).Build();
+IConfiguration configuration = hostConfig.Services.GetRequiredService<IConfiguration>();
 
 var builder = Host.CreateDefaultBuilder(args)
     .ConfigureServices((context, services) =>
@@ -39,10 +20,30 @@ var builder = Host.CreateDefaultBuilder(args)
         // Регистрируем AppDbContext
         services.AddDbContextFactory<AppDbContext>(options =>
         {
+            //string? dBConnectionString = configuration.GetValue<string>("DB_CONNECT:Value");
+            string? dBConnectionString = Environment.GetEnvironmentVariable("DB_CONNECT");
+
+            if (string.IsNullOrEmpty(dBConnectionString))
+            {
+                Console.WriteLine("Ошибка: Строка подключения не указана");
+                return;
+            }
+
             options.UseNpgsql(dBConnectionString);
         });
         // Регистрируем бота
-        services.AddSingleton(botClient);
+        services.AddSingleton<ITelegramBotClient>(lambda =>
+        {
+            //string? botToken = configuration.GetValue<string>("TG_TOKEN:Value");
+            string? botToken = Environment.GetEnvironmentVariable("TG_TOKEN");
+
+            if (string.IsNullOrEmpty(botToken))
+            {
+                throw new InvalidOperationException("Ошибка: Токен не указан");
+            }
+            return new TelegramBotClient(botToken);
+
+        });
         // Регистрируем TaskView
         services.AddSingleton<TaskView>();
         // Регистрируем TaskController
@@ -54,6 +55,8 @@ var builder = Host.CreateDefaultBuilder(args)
 
 using var host = builder.Build();
 var serviceProvider = host.Services;
+
+var botClient = serviceProvider.GetRequiredService<ITelegramBotClient>();
 
 async System.Threading.Tasks.Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
 {
