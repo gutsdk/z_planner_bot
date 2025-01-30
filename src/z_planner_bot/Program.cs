@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore;
 using z_planner_bot.Services;
 using Microsoft.Extensions.Configuration;
 
-using IHost hostConfig = Host.CreateApplicationBuilder(args).Build();
-IConfiguration configuration = hostConfig.Services.GetRequiredService<IConfiguration>();
+//using IHost hostConfig = Host.CreateApplicationBuilder(args).Build();
+//IConfiguration configuration = hostConfig.Services.GetRequiredService<IConfiguration>();
 
 var builder = Host.CreateDefaultBuilder(args)
     .ConfigureServices((context, services) =>
