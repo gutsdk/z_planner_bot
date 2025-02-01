@@ -44,10 +44,21 @@ var builder = Host.CreateDefaultBuilder(args)
             return new TelegramBotClient(botToken);
 
         });
+
+        // Регистрируем UserSettingsView
+        services.AddSingleton<UserSettingsView>();
+        // Регистрируем UserSettingsController
+        services.AddSingleton<UserSettingsController>();
+
         // Регистрируем TaskView
         services.AddSingleton<TaskView>();
         // Регистрируем TaskController
         services.AddTransient<TaskController>();
+
+        // Регистрируем BotView
+        services.AddSingleton<BotView>();
+        // Регистрируем BotController
+        services.AddSingleton<BotController>();
 
         // Регистрируем фоновый сервис
         services.AddHostedService<DatabaseHealthCheckService>();
@@ -61,8 +72,9 @@ var botClient = serviceProvider.GetRequiredService<ITelegramBotClient>();
 async System.Threading.Tasks.Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
 {
     using var scope = serviceProvider.CreateScope();
+    var botController = scope.ServiceProvider.GetRequiredService<BotController>();
     var taskController = scope.ServiceProvider.GetRequiredService<TaskController>();
-    var taskView = scope.ServiceProvider.GetRequiredService<TaskView>();
+    var userSettingsController = scope.ServiceProvider.GetRequiredService<UserSettingsController>();
 
     if (update.Type == UpdateType.Message && update.Message.Type == MessageType.Text)
     {
@@ -86,7 +98,7 @@ async System.Threading.Tasks.Task HandleUpdateAsync(ITelegramBotClient botClient
         switch (text)
         {
             case "Добавить задачу":
-                await taskView.SendMessageAsync(chatId, "Введите наименование задачи:");
+                await taskController.HandleAddTaskPromptAsync(chatId);
                 break;
             case "Мои задачи":
                 await taskController.HandleListTasksAsync(chatId, userId);
@@ -94,31 +106,24 @@ async System.Threading.Tasks.Task HandleUpdateAsync(ITelegramBotClient botClient
             case "Просроченные задачи":
                 await taskController.HandleOverdueTasksAsync(chatId, userId);
                 break;
+            case "Настройки":
+                await userSettingsController.ShowSettingsAsync(chatId); 
+                break;
             case "Помощь":
-                await taskView.SendHelpAsync(chatId);
+                await botController.ShowHelpAsync(chatId);
                 break;
             case "/start":
-                await taskView.ShowMainMenuAsync(chatId);
+                await botController.ShowMenuAsync(chatId);
                 break;
             default:
-                // Если пользователь вводит текст после запроса на добавление задачи
-                if (text.Contains("\n"))
-                {
-                    var parts = text.Split('\n');
-                    var title = parts[0];
-                    var description = parts.Length > 1 ? parts[1] : null;
-                    await taskController.HandleAddTaskAsync(chatId, userId, title, description);
-                }
-                else
-                {
-                    await taskController.HandleAddTaskAsync(chatId, userId, text);
-                }
+                // Бот ожидает ввода от пользователя
+                await taskController.HandleUserInputAsync(chatId, userId, text);
                 break;
         }
     }
     else if (update.Type == UpdateType.CallbackQuery)
     {
-        await taskController.HandleCallbackQueryAsync(update.CallbackQuery);
+        await botController.HandleCallbackQueryAsync(update.CallbackQuery);
     }
 }
 

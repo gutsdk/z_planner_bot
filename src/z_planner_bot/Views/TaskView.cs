@@ -1,5 +1,6 @@
 ﻿using System.Text;
 using Telegram.Bot;
+using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
 
 namespace z_planner_bot.Views
@@ -13,67 +14,60 @@ namespace z_planner_bot.Views
             _botClient = botClient;
         }
 
-        public async Task SendMessageAsync(long chatId, string text, IReplyMarkup? replyMarkup = null)
+        internal async Task SendMessageAsync(long chatId, string text, IReplyMarkup? replyMarkup = null, ParseMode parseMode = ParseMode.None)
         {
             await _botClient.SendMessage(
                 chatId: chatId,
                 text: text,
+                parseMode: parseMode,
                 replyMarkup: replyMarkup
                 );
         }
 
-        public async Task SendTasksListAsync(long chatId, List<Models.Task> tasks)
+        internal async Task SendTasksListAsync(long chatId, List<Models.Task> tasks, Models.SortType sortType)
         {
-            if (tasks.Count == 0)
+            if (!tasks.Any())
             {
                 await SendMessageAsync(chatId, "Задачи не найдены.");
                 return;
             }
 
-            var sb = new StringBuilder();
-            sb.AppendLine("Ваши задачи:");
-
-            for (int i = 0; i < tasks.Count; i++)
+            // Определяем тип сортировки
+            switch (sortType)
             {
-                sb.AppendLine($"{i + 1}. {tasks[i].Title} {(tasks[i].IsCompleted ? "✅" : "")}");
-                if (!string.IsNullOrEmpty(tasks[i].Description))
-                    sb.AppendLine($"    Описание: {tasks[i].Description}");
+                case Models.SortType.ByDate:
+                    tasks = tasks.OrderBy(t => t.CreatedAt).ToList();
+                    break;
+                case Models.SortType.ByStatus:
+                    tasks = tasks.OrderBy(t => t.IsCompleted).ToList();
+                    break;
+                case Models.SortType.ByTitle:
+                    tasks = tasks.OrderBy(t => t.Title).ToList();
+                    break;
             }
 
-            var inlineKeyboard = new InlineKeyboardMarkup(tasks.Select((t, i) => new[]
+            // Выводим отсортированный список
+            foreach (var task in tasks)
             {
-                InlineKeyboardButton.WithCallbackData("❌ Удалить", $"delete_{t.Id}"),
-                InlineKeyboardButton.WithCallbackData(t.IsCompleted ? "🔄 Возобновить" : "✅ Выполнено", $"toggle_{t.Id}"),
-                InlineKeyboardButton.WithCallbackData("✏️ Редактировать", $"edit_{t.Id}")
-            }));
+                var taskText = $"📌 <b>{task.Title}</b> {(task.IsCompleted ? "✅" : "")}";
+                if (!string.IsNullOrEmpty(task.Description))
+                    taskText += $"\n📝 <i>{task.Description}</i>";
 
-            await SendMessageAsync(chatId, sb.ToString(), inlineKeyboard);
-        }
+                var inlineKeyboard = new InlineKeyboardMarkup(new[]
+                {
+                    new[]
+                    {
+                        InlineKeyboardButton.WithCallbackData("❌ Удалить", $"delete_{task.Id}"),
+                        InlineKeyboardButton.WithCallbackData(task.IsCompleted ? "🔄 Возобновить" : "✅ Выполнено", $"toggle_{task.Id}")
+                    },
+                    new[]
+                    {
+                        InlineKeyboardButton.WithCallbackData("✏️ Редактировать", $"edit_{task.Id}")
+                    }
+                });
 
-        public async Task ShowMainMenuAsync(long chatId)
-        {
-            var replyKeyboard = new ReplyKeyboardMarkup(new[] 
-            {
-                new[] { new KeyboardButton("Добавить задачу") },
-                new[] { new KeyboardButton("Мои задачи") },
-                new[] { new KeyboardButton("Просроченные задачи") },
-                new[] { new KeyboardButton("Помощь") }
-            })
-            { ResizeKeyboard =  true };
-
-            await SendMessageAsync(chatId, "Выберите действие: ", replyKeyboard);
-        }
-
-        public async Task SendHelpAsync(long chatId)
-        {
-            var sb = new StringBuilder();
-            sb.AppendLine("Доступные команды:");
-            sb.AppendLine("- Добавить задачу: Нажмите кнопку 'Добавить задачу' и введите наименование и описание (опционально).");
-            sb.AppendLine("- Мои задачи: Нажмите кнопку 'Мои задачи'.");
-            sb.AppendLine("- Просроченные задачи: Нажмите кнопку 'Просроченные задачи'.");
-            sb.AppendLine("- Управление задачами: Используйте кнопки под каждой задачей.");
-
-            await SendMessageAsync(chatId, sb.ToString());
+                await SendMessageAsync(chatId, taskText, inlineKeyboard, parseMode: ParseMode.Html);
+            }
         }
     }
 }
