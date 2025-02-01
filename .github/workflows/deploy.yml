@@ -64,8 +64,6 @@ jobs:
           docker stop z_planner_bot || true
           docker rm z_planner_bot || true
           docker pull ${{ secrets.DOCKER_USERNAME }}/z_planner_bot:latest
-          docker run --rm --network host --env-file .env ${{ secrets.DOCKER_USERNAME }}/z_planner_bot:latest \
-            dotnet ef database update
           docker run -d --network host --restart unless-stopped --name z_planner_bot \
             --env-file .env \
             ${{ secrets.DOCKER_USERNAME }}/z_planner_bot:latestё
