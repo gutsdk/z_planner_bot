@@ -6,6 +6,7 @@ namespace z_planner_bot.Models
     {
         public DbSet<Task> Tasks { get; set; } = null!;
         public DbSet<UserSettings> UserSettings { get; set; } = null!;
+
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {
             Database.Migrate();

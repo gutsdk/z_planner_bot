@@ -222,7 +222,7 @@ namespace z_planner_bot.Controllers
         {
             _tempTasks[chatId] = (_tempTasks[chatId].Title, text.ToLower() == "пропустить" ? null : text, null);
             _userStages[chatId] = TaskInputStage.DueDate;
-            await _taskView.SendMessageAsync(chatId, "Введите дату дедлайна (в формате ГГГГ-ММ-ДД, ДД.ММ.ГГГГ или 'Пропустить'):");
+            await _taskView.SendMessageAsync(chatId, "Введите дату дедлайна (в формате ГГГГ-ММ-ДД, ДД.ММ.ГГГГ, ДД/ММ/ГГГГ, завтра, послезавтра, через N дней или 'Пропустить'):");
         }
 
         private async Task HandleDueDateInputAsync(long chatId, string text)
@@ -267,6 +267,7 @@ namespace z_planner_bot.Controllers
 
         public async Task HandleAddTaskPromptAsync(long chatId)
         {
+            _userStages.Add(chatId, TaskInputStage.Title);
             await _taskView.SendMessageAsync(chatId, "Введите название задачи:");
         }
 
@@ -296,9 +297,16 @@ namespace z_planner_bot.Controllers
             input = input.ToLower();
             if (input == "завтра") return DateTime.Today.AddDays(1);
             if (input == "послезавтра") return DateTime.Today.AddDays(2);
-            if (input.StartsWith("через ") && int.TryParse(input.Substring(6), out var days))
+            if (input.StartsWith("через "))
             {
-                return DateTime.Today.AddDays(days);
+                var cleanInput = new string(input.Substring(6)
+                    .Where(char.IsDigit)  // Оставляем только цифры
+                    .ToArray());
+
+                if (int.TryParse(cleanInput, out var days))
+                {
+                    return DateTime.Today.AddDays(days);
+                }
             }
 
             return null;

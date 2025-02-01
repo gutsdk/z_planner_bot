@@ -2,3 +2,4 @@
 src/z_planner_bot/obj
 .vs/
 src/z_planner_bot/appsettings.json
+src/z_planner_bot/Models/AppDbContextFactory.cs

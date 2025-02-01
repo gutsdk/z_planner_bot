@@ -10,6 +10,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using z_planner_bot.Services;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
+using static System.Formats.Asn1.AsnWriter;
 
 //using IHost hostConfig = Host.CreateApplicationBuilder(args).Build();
 //IConfiguration configuration = hostConfig.Services.GetRequiredService<IConfiguration>();
@@ -31,6 +33,7 @@ var builder = Host.CreateDefaultBuilder(args)
 
             options.UseNpgsql(dBConnectionString);
         });
+
         // Регистрируем бота
         services.AddSingleton<ITelegramBotClient>(lambda =>
         {
@@ -68,14 +71,12 @@ using var host = builder.Build();
 var serviceProvider = host.Services;
 
 var botClient = serviceProvider.GetRequiredService<ITelegramBotClient>();
+var botController = serviceProvider.GetRequiredService<BotController>();
+var taskController = serviceProvider.GetRequiredService<TaskController>();
+var userSettingsController = serviceProvider.GetRequiredService<UserSettingsController>();
 
 async System.Threading.Tasks.Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
 {
-    using var scope = serviceProvider.CreateScope();
-    var botController = scope.ServiceProvider.GetRequiredService<BotController>();
-    var taskController = scope.ServiceProvider.GetRequiredService<TaskController>();
-    var userSettingsController = scope.ServiceProvider.GetRequiredService<UserSettingsController>();
-
     if (update.Type == UpdateType.Message && update.Message.Type == MessageType.Text)
     {
         var chatId = update.Message.Chat.Id;
