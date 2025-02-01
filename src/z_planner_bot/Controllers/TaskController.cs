@@ -159,7 +159,7 @@ namespace z_planner_bot.Controllers
                     await _taskView.SendMessageAsync(chatId, "Введите новое название и описание (опционально):");
                     break;
                 default:
-                    await _taskView.SendMessageAsync(chatId, "Не знаю таких действий 🤔");
+                    await _taskView.SendMessageAsync(chatId, "Не понял вас 🤔");
                     break;
             }
 
@@ -209,7 +209,7 @@ namespace z_planner_bot.Controllers
         {
             if (string.IsNullOrWhiteSpace(text))
             {
-                await _taskView.SendMessageAsync(chatId, "❌ Название задачи не может быть пустым. Попробуйте еще раз:");
+                await _taskView.SendMessageAsync(chatId, "Не понял вас 🤔");
                 return;
             }
 
@@ -233,7 +233,7 @@ namespace z_planner_bot.Controllers
                 dueDate = ParseDate(text);
                 if (dueDate == null)
                 {
-                    await _taskView.SendMessageAsync(chatId, "❌ Некорректный формат даты. Попробуйте еще раз:");
+                    await _taskView.SendMessageAsync(chatId, "Не понял вас 🤔");
                     return;
                 }
             }
@@ -257,11 +257,15 @@ namespace z_planner_bot.Controllers
             {
                 await HandleAddTaskAsync(chatId, userId, _tempTasks[chatId].Title, _tempTasks[chatId].Description, _tempTasks[chatId].DueDate);
             }
-            else
+            else if (text.ToLower() == "нет")
             {
                 await _taskView.SendMessageAsync(chatId, "Создание задачи отменено.");
                 _userStages.Remove(chatId);
                 _tempTasks.Remove(chatId);
+            }
+            else
+            {
+                await _taskView.SendMessageAsync(chatId, "Не понял вас 🤔");
             }
         }
 

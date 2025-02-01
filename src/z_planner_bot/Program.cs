@@ -16,6 +16,9 @@ using static System.Formats.Asn1.AsnWriter;
 //using IHost hostConfig = Host.CreateApplicationBuilder(args).Build();
 //IConfiguration configuration = hostConfig.Services.GetRequiredService<IConfiguration>();
 
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+AppContext.SetSwitch("Npgsql.DisableDateTimeInfinityConversions", true);
+
 var builder = Host.CreateDefaultBuilder(args)
     .ConfigureServices((context, services) =>
     {
