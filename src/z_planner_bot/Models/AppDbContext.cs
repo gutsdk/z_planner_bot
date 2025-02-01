@@ -8,6 +8,7 @@ namespace z_planner_bot.Models
         public DbSet<UserSettings> UserSettings { get; set; } = null!;
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {
+            Database.Migrate();
             Database.EnsureCreated();
         }
 

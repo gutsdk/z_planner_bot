@@ -68,8 +68,6 @@ using var host = builder.Build();
 var serviceProvider = host.Services;
 
 var botClient = serviceProvider.GetRequiredService<ITelegramBotClient>();
-var dbContext = serviceProvider.GetRequiredService<AppDbContext>();
-dbContext.Database.Migrate();
 
 async System.Threading.Tasks.Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
 {
