@@ -37,7 +37,7 @@ namespace z_planner_bot.Controllers
                 UserId = userId,
                 Title = title,
                 Description = description,
-                DueDate = dueDate == null ? null : dueDate.Value.ToUniversalTime()
+                DueDate = (dueDate == null ? null : dueDate.Value.ToUniversalTime())
             };
 
             dbContext.Tasks.Add(task);
@@ -59,7 +59,7 @@ namespace z_planner_bot.Controllers
 
             var settings = await dbContext.UserSettings.FirstOrDefaultAsync(us => us.UserId == userId);
             var sortType = settings == null ? Models.SortType.ByStatus : settings.SortType;
-            var timeZone = settings == null ? "" : settings.TimeZone;
+            var timeZone = settings == null ? "3" : settings.TimeZone;
 
             await SendTasksAsync(chatId, tasks, sortType, timeZone);
         }
@@ -75,7 +75,7 @@ namespace z_planner_bot.Controllers
 
             var settings = await dbContext.UserSettings.FirstOrDefaultAsync(us => us.UserId == userId);
             var sortType = settings == null ? Models.SortType.ByStatus : settings.SortType;
-            var timeZone = settings == null ? "" : settings.TimeZone;
+            var timeZone = settings == null ? "3" : settings.TimeZone;
 
             await SendTasksAsync(chatId, overdueTasks, sortType, timeZone);
         }

@@ -50,7 +50,7 @@ namespace z_planner_bot.Views
             {
                 var taskText = $"📌 <b>{task.Title}</b> {(task.IsCompleted ? "✅" : "")}";
                 if (!string.IsNullOrEmpty(task.Description))
-                    taskText += $"<br>📝 <i>{task.Description}</i>";
+                    taskText += $"\n📝 <i>{task.Description.Replace("\n", "\n  ")}</i>";
 
                 if (task.DueDate.HasValue && !string.IsNullOrEmpty(timeZone))
                 {
