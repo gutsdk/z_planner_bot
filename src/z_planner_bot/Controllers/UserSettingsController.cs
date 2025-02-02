@@ -49,7 +49,7 @@ namespace z_planner_bot.Controllers
                 if (int.TryParse(timeZoneString, out offset))
                 {
                     await SetTimeZonePreference(userId, offset);
-                    await _usView.SendMessageAsync(chatId, $"✅ Часовой пояс установлен на: (UTC{(offset > 0 ? '+' + offset : offset)}:00)");
+                    await _usView.SendMessageAsync(chatId, $"✅ Часовой пояс установлен на: (UTC{(offset > 0 ? '+' + offset.ToString() : offset)}:00)");
                 }
                 else
                 {
