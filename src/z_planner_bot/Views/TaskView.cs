@@ -50,7 +50,7 @@ namespace z_planner_bot.Views
             {
                 var taskText = $"📌 <b>{task.Title}</b> {(task.IsCompleted ? "✅" : "")}";
                 if (!string.IsNullOrEmpty(task.Description))
-                    taskText += $"\n📝 <i>{task.Description}</i>";
+                    taskText += $"<br>📝 <i>{task.Description}</i>";
 
                 if (task.DueDate.HasValue && !string.IsNullOrEmpty(timeZone))
                 {
@@ -70,11 +70,12 @@ namespace z_planner_bot.Views
                     new[]
                     {
                         InlineKeyboardButton.WithCallbackData("❌ Удалить", $"delete_{task.Id}"),
-                        InlineKeyboardButton.WithCallbackData(task.IsCompleted ? "🔄 Возобновить" : "✅ Выполнено", $"toggle_{task.Id}")
+                        InlineKeyboardButton.WithCallbackData("✏️ Редактировать", $"edit_{task.Id}")
+                        
                     },
                     new[]
                     {
-                        InlineKeyboardButton.WithCallbackData("✏️ Редактировать", $"edit_{task.Id}")
+                        InlineKeyboardButton.WithCallbackData(task.IsCompleted ? "🔄 Возобновить" : "✅ Выполнено", $"toggle_{task.Id}")
                     }
                 });
 
