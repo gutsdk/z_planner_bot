@@ -50,13 +50,13 @@ namespace z_planner_bot.Views
             {
                 var taskText = $"📌 <b>{task.Title}</b> {(task.IsCompleted ? "✅" : "")}";
                 if (!string.IsNullOrEmpty(task.Description))
-                    taskText += $"\n📝 <i>{task.Description.Replace("\n", "\n\t")}</i>";
+                    taskText += $"\n📝 <i>{task.Description.Replace("\n", "\n    ")}</i>";
 
                 if (task.DueDate.HasValue && !string.IsNullOrEmpty(timeZone))
                 {
-                    if (TimeSpan.TryParse(timeZone, out TimeSpan offset))
+                    if (int.TryParse(timeZone, out int offset))
                     {
-                        var localTime = task.DueDate.Value.AddHours(offset.TotalHours);
+                        var localTime = task.DueDate.Value.AddHours(offset);
                         taskText += $"\n📅 <i>{localTime:dd.MM.yyyy HH:mm}</i>";
                     }
                     else
