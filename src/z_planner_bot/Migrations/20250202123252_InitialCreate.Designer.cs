@@ -12,7 +12,7 @@ using z_planner_bot.Models;
 namespace z_planner_bot.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250201211444_InitialCreate")]
+    [Migration("20250202123252_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -72,6 +72,10 @@ namespace z_planner_bot.Migrations
 
                     b.Property<int>("SortType")
                         .HasColumnType("integer");
+
+                    b.Property<string>("TimeZone")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<long>("UserId")
                         .HasColumnType("bigint");

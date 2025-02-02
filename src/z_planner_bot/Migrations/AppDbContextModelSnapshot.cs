@@ -70,6 +70,10 @@ namespace z_planner_bot.Migrations
                     b.Property<int>("SortType")
                         .HasColumnType("integer");
 
+                    b.Property<string>("TimeZone")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<long>("UserId")
                         .HasColumnType("bigint");
 

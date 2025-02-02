@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System;
 using System.Globalization;
 using Telegram.Bot.Types;
 using z_planner_bot.Views;
@@ -21,9 +22,9 @@ namespace z_planner_bot.Controllers
             _taskView = taskView;
         }
 
-        public async Task SendTasksAsync(long chatId, List<Models.Task> tasks, Models.SortType sortType)
+        public async Task SendTasksAsync(long chatId, List<Models.Task> tasks, Models.SortType sortType, string timeZone)
         {
-            await _taskView.SendTasksListAsync(chatId, tasks, sortType);
+            await _taskView.SendTasksListAsync(chatId, tasks, sortType, timeZone);
         }
 
         // Добавление задачи
@@ -36,7 +37,7 @@ namespace z_planner_bot.Controllers
                 UserId = userId,
                 Title = title,
                 Description = description,
-                DueDate = dueDate
+                DueDate = dueDate == null ? null : dueDate.Value.ToUniversalTime()
             };
 
             dbContext.Tasks.Add(task);
@@ -58,8 +59,9 @@ namespace z_planner_bot.Controllers
 
             var settings = await dbContext.UserSettings.FirstOrDefaultAsync(us => us.UserId == userId);
             var sortType = settings == null ? Models.SortType.ByStatus : settings.SortType;
+            var timeZone = settings == null ? "" : settings.TimeZone;
 
-            await SendTasksAsync(chatId, tasks, sortType);
+            await SendTasksAsync(chatId, tasks, sortType, timeZone);
         }
 
         // Просмотр просроченных задач
@@ -73,8 +75,9 @@ namespace z_planner_bot.Controllers
 
             var settings = await dbContext.UserSettings.FirstOrDefaultAsync(us => us.UserId == userId);
             var sortType = settings == null ? Models.SortType.ByStatus : settings.SortType;
+            var timeZone = settings == null ? "" : settings.TimeZone;
 
-            await SendTasksAsync(chatId, overdueTasks, sortType);
+            await SendTasksAsync(chatId, overdueTasks, sortType, timeZone);
         }
 
         // Удаление задачи

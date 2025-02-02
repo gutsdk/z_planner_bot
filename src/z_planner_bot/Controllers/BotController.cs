@@ -31,7 +31,7 @@ namespace z_planner_bot.Controllers
         {
             var data = callbackQuery.Data;
 
-            if (data.StartsWith("set_sort_"))
+            if (data.StartsWith("set_sort_") || data.StartsWith("set_timezone_"))
             {
                 await _settingsController.HandleSettingsCallbackAsync(callbackQuery);
             }

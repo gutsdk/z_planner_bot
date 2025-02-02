@@ -13,7 +13,7 @@ namespace z_planner_bot.Views
             _botClient = botClient;
         }
 
-        internal async Task ShowSettingsMenuAsync(long chatId)
+        internal async Task ShowSortSettingsMenuAsync(long chatId)
         {
             var inlineKeyboard = new InlineKeyboardMarkup(new[]
             {
@@ -36,6 +36,27 @@ namespace z_planner_bot.Views
                 parseMode: parseMode,
                 replyMarkup: replyMarkup
                 );
+        }
+
+        internal async Task GetTimeZoneAsync(long chatId)
+        {
+            var buttons = new List<InlineKeyboardButton>();
+
+            for (int i = -12; i <= 14; i++)
+            {
+                string label = i >= 0 ? $"(UTC+{i}:00)" : $"(UTC{i}:00)";
+                string data = $"set_timezone_{i}";
+
+                buttons.Add(InlineKeyboardButton.WithCallbackData(label, data));
+            }
+
+            // Разбиваем на строки по 3 кнопки
+            var rows = buttons.Select((btn, index) => new { btn, index })
+                              .GroupBy(x => x.index / 3)
+                              .Select(g => g.Select(x => x.btn).ToArray())
+                              .ToList();
+
+            await SendMessageAsync(chatId, "Выберите свой часовой пояс:", new InlineKeyboardMarkup(rows));
         }
     }
 }

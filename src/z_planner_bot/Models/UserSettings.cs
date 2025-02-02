@@ -8,6 +8,7 @@ namespace z_planner_bot.Models
         public int Id { get; set; }
         public SortType SortType { get; set; } = SortType.ByStatus;         // значение по умолчанию
         public bool IsNotificationsEnabled { get; set; }
+        public string TimeZone { get; set; } = "UTC";
 
         public long UserId { get; set; }
     }

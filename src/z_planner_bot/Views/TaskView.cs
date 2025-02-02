@@ -23,7 +23,7 @@ namespace z_planner_bot.Views
                 );
         }
 
-        internal async Task SendTasksListAsync(long chatId, List<Models.Task> tasks, Models.SortType sortType)
+        internal async Task SendTasksListAsync(long chatId, List<Models.Task> tasks, Models.SortType sortType, string timeZone)
         {
             if (!tasks.Any())
             {
@@ -51,6 +51,19 @@ namespace z_planner_bot.Views
                 var taskText = $"📌 <b>{task.Title}</b> {(task.IsCompleted ? "✅" : "")}";
                 if (!string.IsNullOrEmpty(task.Description))
                     taskText += $"\n📝 <i>{task.Description}</i>";
+
+                if (task.DueDate.HasValue && !string.IsNullOrEmpty(timeZone))
+                {
+                    if (TimeSpan.TryParse(timeZone, out TimeSpan offset))
+                    {
+                        var localTime = task.DueDate.Value.Add(offset);
+                        taskText += $"\n📝 <i>{localTime}</i>";
+                    }
+                    else
+                    {
+                        taskText += "\n⚠ Не указано";
+                    }
+                }
 
                 var inlineKeyboard = new InlineKeyboardMarkup(new[]
                 {
