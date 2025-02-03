@@ -62,7 +62,7 @@ var builder = Host.CreateDefaultBuilder(args)
         services.AddSingleton<BotController>();
 
         // Регистрируем фоновый сервис
-        services.AddHostedService<DatabaseHealthCheckService>();
+        //services.AddHostedService<DatabaseHealthCheckService>();
     });
 
 using var host = builder.Build();
