@@ -274,6 +274,9 @@ namespace z_planner_bot.Controllers
 
         public async Task HandleAddTaskPromptAsync(long chatId)
         {
+            if (_userStages.ContainsKey(chatId))
+                _userStages.Remove(chatId);
+
             _userStages.Add(chatId, TaskInputStage.Title);
             await _taskView.SendMessageAsync(chatId, "Введите название задачи:");
         }
