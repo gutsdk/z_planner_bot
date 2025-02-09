@@ -133,7 +133,7 @@ namespace z_planner_bot.Controllers
             // Сохраняем существующую задачу во временное хранилище
             _tempTasks[chatId] = (task.Title, task.Description, task.DueDate);
             // Добавляем ID задачи в отдельный словарь
-            _editTaskIds[chatId] = taskId;
+            _editTaskIds.Add(chatId, taskId);
 
             // Запускаем последовательность ввода
             _userStages[chatId] = TaskInputStage.Title;
