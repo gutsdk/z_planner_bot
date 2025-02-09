@@ -181,18 +181,15 @@ namespace z_planner_bot.Controllers
                 return;
             }
 
+            if (!_userStages.ContainsKey(chatId) && !_editTaskIds.ContainsKey(chatId))
+            {
+                await _taskView.SendMessageAsync(chatId, "Начните с команды 'Добавить задачу'.");
+                return;
+            }
+
             if (!_userStages.ContainsKey(chatId))
             {
-                if (_editTaskIds.ContainsKey(chatId))
-                {
-                    // Если это редактирование, начинаем с ввода названия
-                    _userStages[chatId] = TaskInputStage.Title;
-                }
-                else
-                {
-                    await _taskView.SendMessageAsync(chatId, "Начните с команды 'Добавить задачу'.");
-                    return;
-                }
+                _userStages[chatId] = TaskInputStage.Title;
             }
 
             switch (_userStages[chatId])
