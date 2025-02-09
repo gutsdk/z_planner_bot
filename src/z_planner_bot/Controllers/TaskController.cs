@@ -303,7 +303,7 @@ namespace z_planner_bot.Controllers
                     {
                         task.Title = _tempTasks[chatId].Title;
                         task.Description = _tempTasks[chatId].Description;
-                        task.DueDate = _tempTasks[chatId].DueDate;
+                        task.DueDate = _tempTasks[chatId].DueDate.HasValue ? DateTime.SpecifyKind(_tempTasks[chatId].DueDate.Value, DateTimeKind.Utc) : null;
                         await dbContext.SaveChangesAsync();
                         await _taskView.SendMessageAsync(chatId, "Задача обновлена ✅");
                     }
