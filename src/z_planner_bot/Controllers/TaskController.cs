@@ -240,6 +240,14 @@ namespace z_planner_bot.Controllers
         private async Task HandleDueDateInputAsync(long chatId, string text)
         {
             DateTime? dueDate = null;
+
+            // Получаем часовой пояс пользователя
+            using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+            var settings = await dbContext.UserSettings
+                .FirstOrDefaultAsync(us => us.UserId == chatId);
+
+            var userTimeZoneOffset = int.Parse(settings?.TimeZone ?? "3"); // По умолчанию UTC+3
+
             if (text.ToLower() != "пропустить")
             {
                 dueDate = ParseDate(text);
@@ -248,17 +256,22 @@ namespace z_planner_bot.Controllers
                     await _taskView.SendMessageAsync(chatId, "Не понял вас 🤔");
                     return;
                 }
+
+                // Конвертируем локальное время пользователя в UTC
+                // Например, если пользователь ввел 15:00 в UTC+3, то в UTC это будет 12:00
+                dueDate = dueDate.Value.AddHours(-userTimeZoneOffset);
             }
 
-            // Формируем сводку
+            // В сводке показываем локальное время (то, что ввел пользователь)
+            var localDueDate = dueDate?.AddHours(userTimeZoneOffset); // Не меняем время для отображения
             var summary = $"Название: {_tempTasks[chatId].Title}\n" +
                           $"Описание: {_tempTasks[chatId].Description ?? "нет"}\n" +
-                          $"Дедлайн: {(dueDate?.ToString("dd.MM.yyyy") ?? "нет")}\n\n" +
+                          $"Дедлайн: {(localDueDate?.ToString("dd.MM.yyyy HH:mm") ?? "нет")}\n\n" +
                           "Добавить задачу? (Да/Нет)";
 
             await _taskView.SendMessageAsync(chatId, summary);
 
-            // Переходим в режим подтверждения
+            // Переходим в режим подтверждения и сохраняем UTC время
             _userStages[chatId] = TaskInputStage.Confirmation;
             _tempTasks[chatId] = (_tempTasks[chatId].Title, _tempTasks[chatId].Description, dueDate);
         }
