@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System;
 using System.Globalization;
+using System.Text.RegularExpressions;
 using Telegram.Bot.Types;
 using z_planner_bot.Views;
 
@@ -11,9 +11,9 @@ namespace z_planner_bot.Controllers
     {
         private readonly IDbContextFactory<Models.AppDbContext> _dbContextFactory;
         private readonly TaskView _taskView;
-        private readonly Dictionary<long, int> _pendingEdits = new();
         private readonly Dictionary<long, TaskInputStage> _userStages = new();
         private readonly Dictionary<long, (string Title, string? Description, DateTime? DueDate)> _tempTasks = new();
+        private readonly Dictionary<long, int> _editTaskIds = new();
         private enum TaskInputStage { None, Title, Description, DueDate, Confirmation }
 
         public TaskController(IDbContextFactory<Models.AppDbContext> dbContextFactory, TaskView taskView)
@@ -37,7 +37,7 @@ namespace z_planner_bot.Controllers
                 UserId = userId,
                 Title = title,
                 Description = description,
-                DueDate = (dueDate == null ? null : dueDate.Value.ToUniversalTime())
+                DueDate = dueDate == null ? null : dueDate.Value.ToUniversalTime()
             };
 
             dbContext.Tasks.Add(task);
@@ -118,7 +118,7 @@ namespace z_planner_bot.Controllers
             await _taskView.SendMessageAsync(chatId, $"Задача отмечена как {(task.IsCompleted ? "выполненная" : "не выполненная")}. 😎");
         }
 
-        public async Task HandleEditTaskAsync(long chatId, long userId, int taskId, string title, string? description = null)
+        public async Task HandleEditTaskAsync(long chatId, long userId, int taskId)
         {
             using var dbContext = await _dbContextFactory.CreateDbContextAsync();
             var task = await dbContext.Tasks
@@ -130,13 +130,14 @@ namespace z_planner_bot.Controllers
                 return;
             }
 
-            task.Title = title;
-            if (description != null)
-                task.Description = description;
+            // Сохраняем существующую задачу во временное хранилище
+            _tempTasks[chatId] = (task.Title, task.Description, task.DueDate);
+            // Добавляем ID задачи в отдельный словарь
+            _editTaskIds[chatId] = taskId;
 
-            await dbContext.SaveChangesAsync();
-
-            await _taskView.SendMessageAsync(chatId, "Задача обновлена ✅");
+            // Запускаем последовательность ввода
+            _userStages[chatId] = TaskInputStage.Title;
+            await _taskView.SendMessageAsync(chatId, $"Текущее название: {task.Title}\nВведите новое название задачи:");
         }
 
         // Обработка callback-запросов связанных по задачам(нажатия на кнопки)
@@ -158,8 +159,7 @@ namespace z_planner_bot.Controllers
                     await HandleToggleTaskAsync(chatId, userId, taskId);
                     break;
                 case "edit":
-                    _pendingEdits[chatId] = taskId;
-                    await _taskView.SendMessageAsync(chatId, "Введите новое название и описание (опционально):");
+                    await HandleEditTaskAsync(chatId, userId, taskId);
                     break;
                 default:
                     await _taskView.SendMessageAsync(chatId, "Не понял вас 🤔");
@@ -225,7 +225,16 @@ namespace z_planner_bot.Controllers
         {
             _tempTasks[chatId] = (_tempTasks[chatId].Title, text.ToLower() == "пропустить" ? null : text, null);
             _userStages[chatId] = TaskInputStage.DueDate;
-            await _taskView.SendMessageAsync(chatId, "Введите дату дедлайна (в формате ГГГГ-ММ-ДД, ДД.ММ.ГГГГ, ДД/ММ/ГГГГ, завтра, послезавтра, через N дней или 'Пропустить'):");
+            await _taskView.SendMessageAsync(chatId,
+                "Введите дату и/или время дедлайна:\n" +
+                "• ГГГГ-ММ-ДД [ЧЧ:ММ]\n" +
+                "• ДД.ММ.ГГГГ [ЧЧ:ММ]\n" +
+                "• ДД/ММ/ГГГГ [ЧЧ:ММ]\n" +
+                "• ЧЧ:ММ (для сегодня/завтра)\n" +
+                "• завтра\n" +
+                "• послезавтра\n" +
+                "• через N дней\n" +
+                "• или 'Пропустить'");
         }
 
         private async Task HandleDueDateInputAsync(long chatId, string text)
@@ -258,18 +267,42 @@ namespace z_planner_bot.Controllers
         {
             if (text.ToLower() == "да")
             {
-                await HandleAddTaskAsync(chatId, userId, _tempTasks[chatId].Title, _tempTasks[chatId].Description, _tempTasks[chatId].DueDate);
+                if (_editTaskIds.ContainsKey(chatId))
+                {
+                    // Обновляем существующую задачу
+                    using var dbContext = await _dbContextFactory.CreateDbContextAsync();
+                    var task = await dbContext.Tasks
+                        .FirstOrDefaultAsync(t => t.UserId == userId && t.Id == _editTaskIds[chatId]);
+
+                    if (task != null)
+                    {
+                        task.Title = _tempTasks[chatId].Title;
+                        task.Description = _tempTasks[chatId].Description;
+                        task.DueDate = _tempTasks[chatId].DueDate;
+                        await dbContext.SaveChangesAsync();
+                        await _taskView.SendMessageAsync(chatId, "Задача обновлена ✅");
+                    }
+                    _editTaskIds.Remove(chatId);
+                }
+                else
+                {
+                    // Создаем новую задачу
+                    await HandleAddTaskAsync(chatId, userId, _tempTasks[chatId].Title, _tempTasks[chatId].Description, _tempTasks[chatId].DueDate);
+                }
             }
             else if (text.ToLower() == "нет")
             {
-                await _taskView.SendMessageAsync(chatId, "Создание задачи отменено.");
-                _userStages.Remove(chatId);
-                _tempTasks.Remove(chatId);
+                await _taskView.SendMessageAsync(chatId, _editTaskIds.ContainsKey(chatId) ? "Изменения отменены." : "Создание задачи отменено.");
+                _editTaskIds.Remove(chatId);
             }
             else
             {
                 await _taskView.SendMessageAsync(chatId, "Не понял вас 🤔");
+                return;
             }
+
+            _userStages.Remove(chatId);
+            _tempTasks.Remove(chatId);
         }
 
         public async Task HandleAddTaskPromptAsync(long chatId)
@@ -278,41 +311,118 @@ namespace z_planner_bot.Controllers
             await _taskView.SendMessageAsync(chatId, "Введите название задачи:");
         }
 
-        // Проверка ожидания редактирования
-        public bool IsWaitingForEdit(long chatId) => _pendingEdits.ContainsKey(chatId);
-
-        // Получение ID задачи, которую требуется отредактировать
-        public int GetPendingEditTaskId(long chatId)
-        {
-            if (_pendingEdits.TryGetValue(chatId, out var taskId))
-            {
-                _pendingEdits.Remove(chatId);
-                return taskId;
-            }
-            return -1;
-        }
-
         private DateTime? ParseDate(string input)
         {
-            if (DateTime.TryParseExact(input, new[] { "yyyy-MM-dd", "dd.MM.yyyy", "dd/MM/yyyy" },
-                CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedDate))
-            {
-                return parsedDate;
-            }
+            input = input.Trim().ToLower();
 
-            // Обработка относительных дат
-            input = input.ToLower();
+            // Относительные даты
             if (input == "завтра") return DateTime.Today.AddDays(1);
             if (input == "послезавтра") return DateTime.Today.AddDays(2);
-            if (input.StartsWith("через "))
-            {
-                var cleanInput = new string(input.Substring(6)
-                    .Where(char.IsDigit)  // Оставляем только цифры
-                    .ToArray());
 
-                if (int.TryParse(cleanInput, out var days))
+            // Через N дней
+            var throughDaysPattern = @"^через\s+(\d+)\s*(?:день|дня|дней)?$";
+            var throughMatch = Regex.Match(input, throughDaysPattern);
+            if (throughMatch.Success && int.TryParse(throughMatch.Groups[1].Value, out var days))
+                return DateTime.Today.AddDays(days);
+
+            // Стандартные форматы даты с опциональным временем
+            var dateTimePatterns = new[]
+            {
+                // yyyy-MM-dd[ HH:mm]
+                @"^(\d{4})-(\d{2})-(\d{2})(?:\s+(\d{1,2}):(\d{2}))?$",
+                // dd.MM.yyyy[ HH:mm]
+                @"^(\d{2})\.(\d{2})\.(\d{4})(?:\s+(\d{1,2}):(\d{2}))?$",
+                // dd/MM/yyyy[ HH:mm]
+                @"^(\d{2})/(\d{2})/(\d{4})(?:\s+(\d{1,2}):(\d{2}))?$"
+            };
+
+            foreach (var pattern in dateTimePatterns)
+            {
+                var match = Regex.Match(input, pattern);
+                if (match.Success)
                 {
-                    return DateTime.Today.AddDays(days);
+                    try
+                    {
+                        int year, month, day;
+                        if (pattern.StartsWith(@"^(\d{4})"))
+                        {
+                            // yyyy-MM-dd формат
+                            year = int.Parse(match.Groups[1].Value);
+                            month = int.Parse(match.Groups[2].Value);
+                            day = int.Parse(match.Groups[3].Value);
+                        }
+                        else
+                        {
+                            // dd.MM.yyyy или dd/MM/yyyy формат
+                            day = int.Parse(match.Groups[1].Value);
+                            month = int.Parse(match.Groups[2].Value);
+                            year = int.Parse(match.Groups[3].Value);
+                        }
+
+                        var date = new DateTime(year, month, day);
+
+                        // Если указано время
+                        if (match.Groups[4].Success && match.Groups[5].Success)
+                        {
+                            var hour = int.Parse(match.Groups[4].Value);
+                            var minute = int.Parse(match.Groups[5].Value);
+
+                            if (hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59)
+                            {
+                                date = date.AddHours(hour).AddMinutes(minute);
+                            }
+                            else
+                            {
+                                return null; // Неверный формат времени
+                            }
+                        }
+                        else
+                        {
+                            // Если время не указано, устанавливаем конец дня
+                            date = date.AddHours(23).AddMinutes(59);
+                        }
+
+                        // Проверяем, что дата не в прошлом
+                        if (date < DateTime.Today)
+                        {
+                            return null;
+                        }
+
+                        return date;
+                    }
+                    catch
+                    {
+                        return null;
+                    }
+                }
+            }
+
+            // Только время (для сегодняшнего дня)
+            var timePattern = @"^(\d{1,2}):(\d{2})$";
+            var timeMatch = Regex.Match(input, timePattern);
+            if (timeMatch.Success)
+            {
+                try
+                {
+                    var hour = int.Parse(timeMatch.Groups[1].Value);
+                    var minute = int.Parse(timeMatch.Groups[2].Value);
+
+                    if (hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59)
+                    {
+                        var date = DateTime.Today.AddHours(hour).AddMinutes(minute);
+
+                        // Если указанное время уже прошло, переносим на завтра
+                        if (date < DateTime.Now)
+                        {
+                            date = date.AddDays(1);
+                        }
+
+                        return date;
+                    }
+                }
+                catch
+                {
+                    return null;
                 }
             }
 

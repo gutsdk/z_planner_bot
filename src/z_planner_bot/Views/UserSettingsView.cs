@@ -17,12 +17,9 @@ namespace z_planner_bot.Views
         {
             var inlineKeyboard = new InlineKeyboardMarkup(new[]
             {
-                new[]
-                {
-                    InlineKeyboardButton.WithCallbackData("📅 По дате", $"set_sort_{Models.SortType.ByDate}"),
-                    InlineKeyboardButton.WithCallbackData("✅ По статусу", $"set_sort_{Models.SortType.ByStatus}"),
-                    InlineKeyboardButton.WithCallbackData("🔤 По названию", $"set_sort_{Models.SortType.ByTitle}")
-                }
+                new[] { InlineKeyboardButton.WithCallbackData("📅 По дате", $"set_sort_{Models.SortType.ByDate}") },
+                new[] { InlineKeyboardButton.WithCallbackData("✅ По статусу", $"set_sort_{Models.SortType.ByStatus}") },
+                new[] { InlineKeyboardButton.WithCallbackData("🔤 По названию", $"set_sort_{Models.SortType.ByTitle}") }
             });
 
             await SendMessageAsync(chatId, "Выберите способ сортировки по умолчанию:", inlineKeyboard);
