@@ -47,17 +47,17 @@ var builder = Host.CreateDefaultBuilder(args)
         });
 
         // Регистрируем UserSettingsView
-        services.AddSingleton<UserSettingsView>();
+        services.AddTransient<UserSettingsView>();
         // Регистрируем UserSettingsController
         services.AddSingleton<UserSettingsController>();
 
         // Регистрируем TaskView
-        services.AddSingleton<TaskView>();
+        services.AddTransient<TaskView>();
         // Регистрируем TaskController
-        services.AddTransient<TaskController>();
+        services.AddSingleton<TaskController>();
 
         // Регистрируем BotView
-        services.AddSingleton<BotView>();
+        services.AddTransient<BotView>();
         // Регистрируем BotController
         services.AddSingleton<BotController>();
 

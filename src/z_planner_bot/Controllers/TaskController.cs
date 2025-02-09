@@ -137,11 +137,6 @@ namespace z_planner_bot.Controllers
 
             // Запускаем последовательность ввода
             _userStages[chatId] = TaskInputStage.Title;
-            
-            Console.WriteLine($"Checking user stages for chatId: {chatId}");
-            Console.WriteLine($"_userStages.ContainsKey: {_userStages.ContainsKey(chatId)}");
-            Console.WriteLine($"_editTaskIds.ContainsKey: {_editTaskIds.ContainsKey(chatId)}");
-
             await _taskView.SendMessageAsync(chatId, $"Текущее название: {task.Title}\nВведите новое название задачи:");
         }
 
@@ -186,11 +181,6 @@ namespace z_planner_bot.Controllers
                 _editTaskIds.Remove(chatId);
                 return;
             }
-
-        // Логирование для диагностики
-            Console.WriteLine($"Checking user stages for chatId: {chatId}");
-            Console.WriteLine($"_userStages.ContainsKey: {_userStages.ContainsKey(chatId)}");
-            Console.WriteLine($"_editTaskIds.ContainsKey: {_editTaskIds.ContainsKey(chatId)}");
 
             // Проверяем, есть ли этап ввода или редактируемая задача
             if (!_userStages.ContainsKey(chatId))
