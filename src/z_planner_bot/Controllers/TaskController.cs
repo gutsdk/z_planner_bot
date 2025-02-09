@@ -154,20 +154,21 @@ namespace z_planner_bot.Controllers
             {
                 case "delete":
                     await HandleDeleteTaskAsync(chatId, userId, taskId);
+                    await HandleListTasksAsync(chatId, userId);
                     break;
                 case "toggle":
                     await HandleToggleTaskAsync(chatId, userId, taskId);
+                    await HandleListTasksAsync(chatId, userId);
                     break;
                 case "edit":
                     await HandleEditTaskAsync(chatId, userId, taskId);
                     break;
+
                 default:
                     await _taskView.SendMessageAsync(chatId, "Не понял вас 🤔");
+                    await HandleListTasksAsync(chatId, userId);
                     break;
             }
-
-            // Обновляем список задач после выполнения действия
-            await HandleListTasksAsync(chatId, userId);
         }
 
         public async Task HandleUserInputAsync(long chatId, long userId, string text)
@@ -182,8 +183,16 @@ namespace z_planner_bot.Controllers
 
             if (!_userStages.ContainsKey(chatId))
             {
-                await _taskView.SendMessageAsync(chatId, "Начните с команды 'Добавить задачу'.");
-                return;
+                if (_editTaskIds.ContainsKey(chatId))
+                {
+                    // Если это редактирование, начинаем с ввода названия
+                    _userStages[chatId] = TaskInputStage.Title;
+                }
+                else
+                {
+                    await _taskView.SendMessageAsync(chatId, "Начните с команды 'Добавить задачу'.");
+                    return;
+                }
             }
 
             switch (_userStages[chatId])
