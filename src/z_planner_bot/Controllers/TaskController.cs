@@ -133,7 +133,7 @@ namespace z_planner_bot.Controllers
             // Сохраняем существующую задачу во временное хранилище
             _tempTasks[chatId] = (task.Title, task.Description, task.DueDate);
             // Добавляем ID задачи в отдельный словарь
-            _editTaskIds.Add(chatId, taskId);
+            _editTaskIds[chatId] = taskId;
 
             // Запускаем последовательность ввода
             _userStages[chatId] = TaskInputStage.Title;
@@ -181,6 +181,11 @@ namespace z_planner_bot.Controllers
                 _editTaskIds.Remove(chatId);
                 return;
             }
+
+        // Логирование для диагностики
+            Console.WriteLine($"Checking user stages for chatId: {chatId}");
+            Console.WriteLine($"_userStages.ContainsKey: {_userStages.ContainsKey(chatId)}");
+            Console.WriteLine($"_editTaskIds.ContainsKey: {_editTaskIds.ContainsKey(chatId)}");
 
             // Проверяем, есть ли этап ввода или редактируемая задача
             if (!_userStages.ContainsKey(chatId))
