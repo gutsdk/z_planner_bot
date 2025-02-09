@@ -178,18 +178,23 @@ namespace z_planner_bot.Controllers
                 await _taskView.SendMessageAsync(chatId, "Создание задачи отменено");
                 _userStages.Remove(chatId);
                 _tempTasks.Remove(chatId);
+                _editTaskIds.Remove(chatId);
                 return;
             }
 
-            if (!_userStages.ContainsKey(chatId) && !_editTaskIds.ContainsKey(chatId))
-            {
-                await _taskView.SendMessageAsync(chatId, "Начните с команды 'Добавить задачу'.");
-                return;
-            }
-
+            // Проверяем, есть ли этап ввода или редактируемая задача
             if (!_userStages.ContainsKey(chatId))
             {
-                _userStages[chatId] = TaskInputStage.Title;
+                if (_editTaskIds.ContainsKey(chatId))
+                {
+                    // Если это редактирование, начинаем с ввода названия
+                    _userStages[chatId] = TaskInputStage.Title;
+                }
+                else
+                {
+                    await _taskView.SendMessageAsync(chatId, "Начните с команды 'Добавить задачу'.");
+                    return;
+                }
             }
 
             switch (_userStages[chatId])
@@ -210,6 +215,7 @@ namespace z_planner_bot.Controllers
                     await _taskView.SendMessageAsync(chatId, "Что-то пошло не так. Начните с команды 'Добавить задачу'.");
                     _userStages.Remove(chatId);
                     _tempTasks.Remove(chatId);
+                    _editTaskIds.Remove(chatId);
                     break;
             }
         }
